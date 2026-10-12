@@ -1,7 +1,7 @@
 [project]
 name = "faultscope-ascon"
 version = "0.1.0"
-description = "Add your description here"
+description = "Pre-silicon Ascon-AEAD128 fault-injection and temporal-recomputation research workbench"
 readme = "README.md"
 authors = [
     { name = "Parth Mishra", email = "205018893+pm2m1@users.noreply.github.com" }
@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-faultscope-ascon = "faultscope_ascon:main"
+faultscope-ascon = "faultscope_ascon.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.12.9,<0.13.0"]

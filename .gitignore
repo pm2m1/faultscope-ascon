@@ -11,3 +11,14 @@ __pycache__/
 # React frontend
 frontend/node_modules/
 frontend/dist/
+# Local source-package archives and diagnostic notes
+faultscope_phase*_source.zip
+faultscope_ascon_phase*.zip
+README_NAV_FIX.txt
+
+# Untracked large synthesis outputs; preserve locally / archive separately
+reports/phase5/logs/
+reports/phase5/netlists/
+
+# Editable/project-local environment
+.venv/

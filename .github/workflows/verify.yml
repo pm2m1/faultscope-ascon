@@ -1,0 +1,61 @@
+name: Verify cryptography and dashboard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-rtl:
+    name: Python, Verilator, evidence, RTL contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native RTL toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y verilator g++ make cmake
+          verilator --version
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - name: Restore pinned official Ascon-C reference
+        run: |
+          mkdir -p references
+          git clone https://github.com/ascon/ascon-c.git references/ascon-c
+          git -C references/ascon-c checkout --detach "$(cat docs/ascon_reference_commit.txt)"
+          test "$(git -C references/ascon-c rev-parse HEAD)" = "$(cat docs/ascon_reference_commit.txt)"
+      - name: Install locked dependencies
+        run: uv sync --locked --group dev
+      - name: Verify immutable campaign evidence
+        run: uv run faultscope-ascon verify-evidence
+      - name: Run complete Python and RTL regression suite
+        run: uv run python -m pytest tests/ -q
+
+  frontend:
+    name: TypeScript and Vite production build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Restore dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Compile and build
+        working-directory: frontend
+        run: npm run build

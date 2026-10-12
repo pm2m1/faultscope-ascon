@@ -1,2 +1,3 @@
-def main() -> None:
-    print("Hello from faultscope-ascon!")
+"""FaultScope-Ascon: educational Ascon hardware-security research workbench."""
+
+__version__ = "0.1.0"
