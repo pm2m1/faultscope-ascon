@@ -5,3 +5,51 @@
 .nav-link:focus-visible{outline:2px solid #65b9e8;outline-offset:2px}
 .nav-link:disabled{opacity:.5;cursor:not-allowed}
 #overview,#comparison,#ledger{scroll-margin-top:24px}
+
+/* Phase 8A: local evidence-driven adversarial research */
+#research {scroll-margin-top:24px;margin:0 0 18px}
+.research-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:20px}
+.research-tile{background:#132137;border:1px solid #2c3f59;border-radius:11px;padding:18px;min-width:0}
+.research-tile h3{font:600 24px 'IBM Plex Mono',monospace;color:#f0f7ff;margin:13px 0}
+.research-tile strong{color:#a8e6d9;font-size:13px;line-height:1.5}
+.research-tile p{font-size:11px;line-height:1.7;color:#8ea5c1;margin:10px 0 0}
+.research-divider{border-top:1px solid #293b52;margin:26px 0 22px}
+.research-subhead{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+.research-subhead h3{font-size:17px;margin:8px 0;color:#e8f2ff}
+.research-subhead p{font-size:12px;color:#8ba3be;margin:0}
+.research-switch{display:flex;gap:4px;padding:4px;background:#0a1323;border:1px solid #31415a;border-radius:9px}
+.research-switch button{background:transparent;border:0;color:#9eb3cd;padding:9px 14px;border-radius:6px;font-size:12px}
+.research-switch button.selected{color:#c5f5ee;background:#185457}
+.research-scope{margin-bottom:10px}
+.scenario-table-scroll{overflow:auto}
+.scenario-table{min-width:620px}
+.scenario-table td{padding:12px 10px}
+.scenario-link{padding:4px 0;border:0;background:transparent;color:#a3dfff;text-decoration:underline;text-decoration-color:#346b88;text-underline-offset:3px;font-size:12px}
+.scenario-link:hover{color:#e0f8ff}
+.scenario-link:focus-visible,.research-switch button:focus-visible{outline:2px solid #65b9e8;outline-offset:3px}
+.scenario-result{display:flex;align-items:center;gap:12px;min-width:130px}
+.scenario-result strong{min-width:20px;font:600 13px 'IBM Plex Mono',monospace}
+.research-critical{color:#ffb9a4}
+.scenario-track{display:block;width:100px;background:#293c50;height:7px;border-radius:7px;overflow:hidden}
+.scenario-track span{display:block;height:100%;background:#e5a37a}
+.evidence-tag{font:500 10px 'IBM Plex Mono',monospace;color:#8fc1d0;border:1px solid #2d5263;border-radius:7px;padding:8px}
+.research-filters select{min-width:170px;max-width:230px}
+.research-cases-table{min-width:930px}
+.research-flag{font-size:10px;padding:5px 7px;border-radius:5px;white-space:nowrap}
+.research-flag.neutral{background:#1c3240;color:#8fb7cc}
+.research-flag.warn{background:#4b2b2a;color:#ffc2a8}
+.provenance-detail{margin-top:20px;font-size:11px;color:#8fa8c3}
+.provenance-detail summary{cursor:pointer;color:#a7cae0}
+.provenance-detail code{overflow-wrap:anywhere}
+.research-limitations{margin-top:22px;border:1px solid #6c5a3a;border-radius:9px;padding:17px;background:#252318;color:#dbba85;font-size:12px}
+.research-limitations ul{padding-left:20px;color:#b4a991;line-height:1.7;margin:10px 0 0}
+@media(max-width:1150px){.research-overview{grid-template-columns:1fr}}
+@media(max-width:780px){.sidebar .nav-link{display:flex;padding:8px 12px}.sidebar .side-label{display:block;margin-top:18px;margin-bottom:6px}.research-overview{grid-template-columns:1fr}.research-filters select{min-width:130px}.sidebar{position:static}}
+#research-explorer{scroll-margin-top:24px}
+.research-phase-breakdown{margin:18px 0 26px}
+.research-phase-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:12px}
+.research-phase-tile{border:1px solid #2c405a;background:#13223a;padding:13px;border-radius:9px;min-width:0}
+.research-phase-tile strong{display:block;margin:10px 0;color:#d5eaff;font-size:12px}
+.research-phase-tile small{display:block;color:#9eb5cc;font-size:10px;line-height:1.5}
+@media(max-width:1150px){.research-phase-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:780px){.research-phase-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

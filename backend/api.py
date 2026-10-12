@@ -186,3 +186,7 @@ def cases(
                 (status == "all" or _classify(r) == status)]
     return {"total": len(filtered), "offset": offset, "limit": limit,
             "rows": [{**r, "outcome": _classify(r)} for r in filtered[offset:offset + limit]]}
+
+# Additive Phase 7 research endpoints; legacy /api/summary and /api/cases unchanged.
+from backend.research import router as research_router
+app.include_router(research_router)
