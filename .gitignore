@@ -1,0 +1,10 @@
+
+# External reference repository
+references/ascon-c/
+
+# Generated experiment artifacts
+build/
+__pycache__/
+.pytest_cache/
+*.pyc
+.DS_Store
