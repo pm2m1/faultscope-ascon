@@ -1,12 +1,14 @@
-
-from pathlib import Path
 import random
 import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 
-from reference.ascon_permutation import MASK64, ascon_permutation
+from reference.ascon_permutation import (
+    MASK64,
+    ascon_permutation,
+)
 
 
 if shutil.which("clang") is None:

@@ -1,0 +1,47 @@
+{
+  "cases": 424,
+  "applied_faults": 93,
+  "detected_faults": 93,
+  "coverage_percent": 100.0,
+  "unfaulted_cases": 331,
+  "false_alarms": 0,
+  "false_alarm_rate_percent": 0.0,
+  "fail_closed_violations": 0,
+  "mean_baseline_cycles": 47.16509433962264,
+  "mean_protected_cycles": 95.63679245283019,
+  "mean_overhead_cycles": 48.471698113207545,
+  "relative_mean_latency_increase_percent": 102.77027702770276,
+  "min_baseline_cycles": 33,
+  "max_baseline_cycles": 65,
+  "p95_baseline_cycles": 65,
+  "min_protected_cycles": 65,
+  "max_protected_cycles": 133,
+  "p95_protected_cycles": 133,
+  "phases": {
+    "0": {
+      "cases": 30,
+      "injected": 27,
+      "detected": 27
+    },
+    "1": {
+      "cases": 27,
+      "injected": 22,
+      "detected": 22
+    },
+    "2": {
+      "cases": 25,
+      "injected": 10,
+      "detected": 10
+    },
+    "3": {
+      "cases": 26,
+      "injected": 10,
+      "detected": 10
+    },
+    "4": {
+      "cases": 316,
+      "injected": 24,
+      "detected": 24
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "utc_time": "2026-10-12T17:59:36.712412+00:00",
+  "yosys": "Yosys 0.69+post (git sha1 143eb14f9cc55d6f8927e68523b0c9d2166ed02c, Release, AppleClang clang++ 21.0.0.21000334)",
+  "sv2v": "0.0.13",
+  "flow": "sv2v; Yosys hierarchy -check; synth -flatten -noabc; check -assert; write_json",
+  "sources_sha256": {
+    "ascon_aead_encrypt_bounded.sv": "2cc87bf382b66209ad54c9a0b9ed0f0c6bb60705b73796053c1ff361458e3b60",
+    "ascon_aead_encrypt_faultable.sv": "e4840a194357908214e3f54147cfee6c759ad830307eee373d8f226f48bf4bda",
+    "ascon_aead_encrypt_temporal.sv": "d4f711fb95b7cd2d74f124a30360f2aa09ac3cdcd85ad3f7d74a66a469e84739",
+    "ascon_permutation.sv": "add3c8b2dd364e5f6d65af28372f306402e93f70bbf79173d55dc6195d0b938d",
+    "ascon_permutation_faultable.sv": "0df5e596f26d6bc556a05369db298f3b047d9dc705b9eeb8ee7cbb448a9a6995",
+    "ascon_permutation_temporal.sv": "760ba036bd43a62e81e14a34a365f9992a8dd8662772c2e0fa7bbda363dbc19c",
+    "ascon_round.sv": "ebfb33334a48fec0069803a5531c2d0adbfab398f57c79cc507025f1a39af3a8"
+  },
+  "scope": "RTL generic gate/FF-cell counts, not physical area, LUTs, timing or power",
+  "git_commit": "1b7d727136033174c32828f50385a1c7afe7ee1b",
+  "ascon_reference_commit": "446347f21b209f3921c65ece70027c366cbe1693",
+  "campaign_sha256": "c91c069b1f7acd42c7c6382b2a212d483cc34aa1db4e7f9b0f22129268320a07"
+}

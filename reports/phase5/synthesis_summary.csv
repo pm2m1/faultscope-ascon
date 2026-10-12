@@ -1,0 +1,4 @@
+design,top_module,total_generic_cells,sequential_cells,sequential_Q_bits,combinational_cells
+baseline,ascon_aead_encrypt_bounded,8277,1625,1625,6652
+instrumented,ascon_aead_encrypt_faultable,9865,1659,1659,8206
+protected,ascon_aead_encrypt_temporal,12863,2645,2645,10218

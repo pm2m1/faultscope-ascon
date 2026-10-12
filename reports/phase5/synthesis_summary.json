@@ -1,0 +1,54 @@
+{
+  "baseline": {
+    "top": "ascon_aead_encrypt_bounded",
+    "total_cells": 8277,
+    "sequential_cells": 1625,
+    "sequential_q_bits": 1625,
+    "combinational_cells": 6652,
+    "cell_types": {
+      "$_AND_": 1741,
+      "$_DFFE_PN0P_": 1619,
+      "$_DFF_PN0_": 6,
+      "$_MUX_": 1492,
+      "$_NOT_": 460,
+      "$_OR_": 813,
+      "$_XOR_": 2144,
+      "$scopeinfo": 2
+    }
+  },
+  "instrumented": {
+    "top": "ascon_aead_encrypt_faultable",
+    "total_cells": 9865,
+    "sequential_cells": 1659,
+    "sequential_q_bits": 1659,
+    "combinational_cells": 8206,
+    "cell_types": {
+      "$_AND_": 1768,
+      "$_DFFE_PN0P_": 1653,
+      "$_DFF_PN0_": 6,
+      "$_MUX_": 2653,
+      "$_NOT_": 476,
+      "$_OR_": 828,
+      "$_XOR_": 2479,
+      "$scopeinfo": 2
+    }
+  },
+  "protected": {
+    "top": "ascon_aead_encrypt_temporal",
+    "total_cells": 12863,
+    "sequential_cells": 2645,
+    "sequential_q_bits": 2645,
+    "combinational_cells": 10218,
+    "cell_types": {
+      "$_AND_": 1784,
+      "$_DFFE_PN0P_": 2636,
+      "$_DFF_PN0_": 8,
+      "$_DFF_PN1_": 1,
+      "$_MUX_": 3997,
+      "$_NOT_": 483,
+      "$_OR_": 1152,
+      "$_XOR_": 2799,
+      "$scopeinfo": 3
+    }
+  }
+}
