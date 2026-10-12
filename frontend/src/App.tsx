@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Activity, AlertTriangle, ArrowUpRight, Cpu, Database, Fingerprint, Gauge, Layers3, RefreshCw, ShieldCheck, Zap, FlaskConical, GitCompareArrows } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowUpRight, Cpu, Database, Fingerprint, Gauge, Layers3, RefreshCw, ShieldCheck, Zap, FlaskConical, GitCompareArrows, BookOpen } from 'lucide-react';
+import AsconLab from './AsconLab';
 
 type Design = { design: string; generic_cells: number; ff_bits: number; combinational_cells: number };
 type Phase = { phase: number; name: string; cases: number; applied: number; detected: number; false_alarms: number };
@@ -83,7 +84,7 @@ export default function App() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshCounter, setRefreshCounter] = useState(0);
-  const [activeSection, setActiveSection] = useState<'overview' | 'comparison' | 'ledger' | 'research'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'comparison' | 'ledger' | 'research' | 'ascon-lab'>('overview');
   const [research, setResearch] = useState<ResearchSummary | null>(null);
   const [researchPage, setResearchPage] = useState<ResearchPage | null>(null);
   const [researchError, setResearchError] = useState('');
@@ -94,7 +95,7 @@ export default function App() {
   const [researchOffset, setResearchOffset] = useState(0);
   const researchLimit = 12;
   const resetResearchFilters = () => { setResearchScenario('all'); setResearchOutcome('all'); setResearchPhase('all'); setResearchOffset(0); };
-  const jumpTo = (id: 'overview' | 'comparison' | 'ledger' | 'research') => {
+  const jumpTo = (id: 'overview' | 'comparison' | 'ledger' | 'research' | 'ascon-lab') => {
     setActiveSection(id);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -155,6 +156,7 @@ export default function App() {
       <button type="button" disabled={!summary} className={`nav-link ${activeSection === 'comparison' ? 'active' : ''}`} aria-current={activeSection === 'comparison' ? 'location' : undefined} onClick={() => jumpTo('comparison')}><Layers3 size={17}/> Phase comparison</button>
       <button type="button" disabled={!summary} className={`nav-link ${activeSection === 'ledger' ? 'active' : ''}`} aria-current={activeSection === 'ledger' ? 'location' : undefined} onClick={() => jumpTo('ledger')}><Database size={17}/> Experiment ledger</button>
       <button type="button" disabled={!summary} className={`nav-link ${activeSection === 'research' ? 'active' : ''}`} aria-current={activeSection === 'research' ? 'location' : undefined} onClick={() => jumpTo('research')}><FlaskConical size={17}/> Adversarial research</button>
+      <button type="button" className={`nav-link ${activeSection === 'ascon-lab' ? 'active' : ''}`} aria-current={activeSection === 'ascon-lab' ? 'location' : undefined} onClick={() => jumpTo('ascon-lab')}><BookOpen size={17}/> Ascon learning lab</button>
       <div className="sidebar-spacer"/>
       <div className="sidebar-note"><ShieldCheck size={18}/><div><strong>Evidence-driven</strong><p>Displays local, hash-verified Phase 4B, 7A, 7B and Phase 5 reports. No fabricated experiment results.</p></div></div>
       <div className="sidebar-footer">NIST SP 800-232<br/>Local research environment</div>
@@ -162,7 +164,7 @@ export default function App() {
 
     <main>
       <header className="topbar">
-        <div className="breadcrumbs">Cryptographic hardware <span>/</span> <strong>{activeSection === 'overview' ? 'Experiment overview' : activeSection === 'comparison' ? 'Phase comparison' : activeSection === 'ledger' ? 'Experiment ledger' : 'Adversarial research'}</strong></div>
+        <div className="breadcrumbs">Cryptographic hardware <span>/</span> <strong>{activeSection === 'overview' ? 'Experiment overview' : activeSection === 'comparison' ? 'Phase comparison' : activeSection === 'ledger' ? 'Experiment ledger' : activeSection === 'research' ? 'Adversarial research' : 'Ascon learning lab'}</strong></div>
         <div className="top-actions"><div className="status-chip"><span className={'dot ' + (summary ? 'ok' : 'off')}/>{summary ? 'Reports loaded' : 'Awaiting evidence'}</div>
         <button className="refresh" onClick={() => setRefreshCounter(x => x + 1)}><RefreshCw size={15}/> Refresh</button></div>
       </header>
@@ -311,6 +313,8 @@ export default function App() {
               <div className="research-limitations"><strong>Interpretation boundaries</strong><ul>{research.limitations.map(text => <li key={text}>{text}</li>)}</ul></div>
             </>}
           </section>
+
+          <AsconLab />
 
           <div className="footnote"><AlertTriangle size={18}/><div><strong>Interpretation boundary</strong><p>{summary.scope.disclaimer} Model: {summary.scope.fault_model}. The RTL currently supports {summary.scope.hardware}, with 0–{summary.scope.plaintext_ad_max_bytes} bytes of plaintext and associated data.</p></div></div>
           <footer>Reference: {summary.provenance.reference_commit.slice(0,12)} · Analysis revision: {summary.provenance.git_commit.slice(0,12)} · Yosys: {summary.provenance.yosys.slice(0,35)}</footer>
