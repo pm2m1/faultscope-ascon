@@ -1,0 +1,2 @@
+reports/*.csv -text
+reports/phase5/*.csv -text
