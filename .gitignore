@@ -1,4 +1,3 @@
-
 # External reference repository
 references/ascon-c/
 
@@ -8,3 +7,7 @@ __pycache__/
 .pytest_cache/
 *.pyc
 .DS_Store
+
+# React frontend
+frontend/node_modules/
+frontend/dist/
