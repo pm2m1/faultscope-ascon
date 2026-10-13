@@ -1,0 +1,81 @@
+name: Phase 13 UART CDC and reset pilot
+
+# Pull-request gate; manual rerun is available once merged to the default branch.
+on:
+  pull_request:
+    paths:
+      - 'rtl/**'
+      - 'tb/tb_faultscope_phase13_reset.sv'
+      - 'experiments/phase11_fpga.py'
+      - 'tests/test_phase11_uart.py'
+      - 'tests/test_phase11_fpga.py'
+      - 'tests/test_phase13_reset.py'
+      - 'scripts/phase12_vivado_ooc.tcl'
+      - '.github/workflows/phase13-cdc-reset.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reset-hardening:
+    name: UART reset interruption, unchanged AEAD, XC7 mapping
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Verilator, Yosys and pinned sv2v
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y verilator g++ make cmake yosys curl unzip
+          curl --fail --location --retry 3 --silent --show-error \
+            'https://github.com/zachjs/sv2v/releases/download/v0.0.13/sv2v-Linux.zip' \
+            --output /tmp/sv2v-Linux.zip
+          mkdir -p /tmp/sv2v-dist
+          unzip -q /tmp/sv2v-Linux.zip -d /tmp/sv2v-dist
+          SV2V_BIN="$(find /tmp/sv2v-dist -type f -name sv2v | head -n 1)"
+          test -n "$SV2V_BIN"
+          sudo install -m 0755 "$SV2V_BIN" /usr/local/bin/sv2v
+          test "$(sv2v --numeric-version)" = '0.0.13'
+          verilator --version
+          yosys -V
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - name: Restore locked dependencies
+        run: uv sync --locked --group dev
+      - name: Check historical evidence and unchanged cryptographic RTL
+        run: uv run faultscope-ascon verify-evidence
+      - name: Mandatory Phase 11 known-answer and fault-alarm bench
+        env:
+          FAULTSCOPE_RUN_PHASE11_UART: '1'
+        run: uv run python -m pytest tests/test_phase11_uart.py -v
+      - name: Mandatory Phase 13 interruption and recovery bench
+        env:
+          FAULTSCOPE_RUN_PHASE13_UART: '1'
+        run: uv run python -m pytest tests/test_phase13_reset.py -v
+      - name: Mandatory complete UART XC7 mapping
+        env:
+          FAULTSCOPE_RUN_PHASE11_FPGA: '1'
+        run: uv run python -m pytest tests/test_phase11_fpga.py -v
+      - name: Check six scalar top-level ports
+        run: |
+          uv run python - <<'PY'
+          from pathlib import Path
+          import json
+          p = Path('build/reproduction/phase11/uart_resource_screen.json')
+          evidence = json.loads(p.read_text())
+          assert evidence['num_top_level_signal_bits'] == 6
+          assert evidence['historical_rtl_pinned'] is True
+          assert 'fs_reset_sync.sv' in evidence['rtl_sha256']
+          print('PASS: Phase 13 mapped UART top retains six scalar ports')
+          PY
+      - name: Upload Phase 13 XC7 mapping artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase13-cdc-reset-${{ github.run_id }}
+          path: build/reproduction/phase11/
+          retention-days: 14
+          if-no-files-found: warn

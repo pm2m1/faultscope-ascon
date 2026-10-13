@@ -24,6 +24,7 @@ def test_unchanged_cryptographic_core_is_in_source_set():
     assert "ascon_aead_encrypt_temporal.sv" in NAMES
     assert "ascon_round.sv" in NAMES
     assert "faultscope_uart_top.sv" in NAMES
+    assert "fs_reset_sync.sv" in NAMES
     assert all((ROOT/"rtl"/n).is_file() for n in NAMES)
 
 
