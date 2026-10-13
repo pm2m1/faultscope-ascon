@@ -20,7 +20,8 @@ TOP = "faultscope_uart_top"
 NAMES = (
     "ascon_round.sv", "ascon_permutation_faultable.sv",
     "ascon_permutation_temporal.sv", "ascon_aead_encrypt_temporal.sv",
-    "fs_uart_rx.sv", "fs_uart_tx.sv", "faultscope_uart_top.sv",
+    "fs_reset_sync.sv", "fs_uart_rx.sv", "fs_uart_tx.sv",
+    "faultscope_uart_top.sv",
 )
 PORTS = {"clk", "rst_n", "uart_rx_i", "uart_tx_o", "led_busy_o", "led_alarm_o"}
 

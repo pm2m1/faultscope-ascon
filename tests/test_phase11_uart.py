@@ -68,7 +68,8 @@ def test_uart_end_to_end_verilator(tmp_path):
     assert verilator, "Verilator required for UART wrapper test (brew install verilator)"
     sources = ["rtl/ascon_round.sv", "rtl/ascon_permutation_faultable.sv",
                "rtl/ascon_permutation_temporal.sv", "rtl/ascon_aead_encrypt_temporal.sv",
-               "rtl/fs_uart_rx.sv", "rtl/fs_uart_tx.sv", "rtl/faultscope_uart_top.sv",
+               "rtl/fs_reset_sync.sv", "rtl/fs_uart_rx.sv", "rtl/fs_uart_tx.sv",
+               "rtl/faultscope_uart_top.sv",
                "tb/tb_faultscope_uart_top.sv"]
     obj = tmp_path / "obj_dir"
     proc = subprocess.run([verilator, "--binary", "--timing", "--assert",

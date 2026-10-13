@@ -14,7 +14,7 @@ switch $design {
  baseline { set top ascon_aead_encrypt_bounded; lappend names ascon_permutation.sv ascon_aead_encrypt_bounded.sv }
  instrumented { set top ascon_aead_encrypt_faultable; lappend names ascon_permutation_faultable.sv ascon_aead_encrypt_faultable.sv }
  protected { set top ascon_aead_encrypt_temporal; lappend names ascon_permutation_faultable.sv ascon_permutation_temporal.sv ascon_aead_encrypt_temporal.sv }
- uart_protected { set top faultscope_uart_top; lappend names ascon_permutation_faultable.sv ascon_permutation_temporal.sv ascon_aead_encrypt_temporal.sv fs_uart_rx.sv fs_uart_tx.sv faultscope_uart_top.sv }
+ uart_protected { set top faultscope_uart_top; lappend names ascon_permutation_faultable.sv ascon_permutation_temporal.sv ascon_aead_encrypt_temporal.sv fs_reset_sync.sv fs_uart_rx.sv fs_uart_tx.sv faultscope_uart_top.sv }
 }
 set_param general.maxThreads 4
 create_project -in_memory -part $part

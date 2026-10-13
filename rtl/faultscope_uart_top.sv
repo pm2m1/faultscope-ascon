@@ -38,13 +38,19 @@ module faultscope_uart_top #(
         return c;
     endfunction
 
+    // Board-level asynchronous assertion; release only after three rising
+    // clock edges. Every stateful module below uses the same released reset.
+    logic rst_n_core;
+    fs_reset_sync u_reset_sync (
+        .clk(clk), .rst_n_async(rst_n), .rst_n_sync(rst_n_core));
+
     logic [7:0] rx_data, tx_data;
     logic rx_valid, tx_start_q, tx_busy;
     fs_uart_rx #(.CLOCKS_PER_BIT(CLOCKS_PER_BIT)) receiver (
-        .clk(clk), .rst_n(rst_n), .rx_i(uart_rx_i),
+        .clk(clk), .rst_n(rst_n_core), .rx_i(uart_rx_i),
         .data_o(rx_data), .valid_o(rx_valid));
     fs_uart_tx #(.CLOCKS_PER_BIT(CLOCKS_PER_BIT)) transmitter (
-        .clk(clk), .rst_n(rst_n), .start_i(tx_start_q),
+        .clk(clk), .rst_n(rst_n_core), .start_i(tx_start_q),
         .data_i(tx_data), .tx_o(uart_tx_o), .busy_o(tx_busy));
 
     logic [127:0] key_q, nonce_q, ad_q, msg_q;
@@ -62,7 +68,7 @@ module faultscope_uart_top #(
     assign led_alarm_o = core_alarm;
 
     ascon_aead_encrypt_temporal core (
-        .clk(clk), .rst_n(rst_n), .start_i(core_start_q),
+        .clk(clk), .rst_n(rst_n_core), .start_i(core_start_q),
         .key_i(key_q), .nonce_i(nonce_q),
         .associated_data_i(ad_q), .ad_len_i(ad_len_q),
         .plaintext_i(msg_q), .msg_len_i(msg_len_q),
@@ -95,8 +101,8 @@ module faultscope_uart_top #(
             next_tx_byte = response_payload[tx_index_q - 8'd3];
     end
 
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
+    always_ff @(posedge clk or negedge rst_n_core) begin
+        if (!rst_n_core) begin
             key_q <= '0; nonce_q <= '0; ad_q <= '0; msg_q <= '0;
             ad_len_q <= '0; msg_len_q <= '0;
             fault_en_q <= 0; fault_phase_q <= 0; fault_round_q <= 0;

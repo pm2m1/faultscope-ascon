@@ -11,7 +11,10 @@ module fs_uart_rx #(
 );
     typedef enum logic [1:0] {WAIT_START, CHECK_START, RECEIVE, CHECK_STOP} state_t;
     state_t state_q;
-    logic [1:0] sync_q;
+    // Physical UART RX is asynchronous to clk. Keep these two registers
+    // adjacent in Vivado and prevent SRL extraction; only sync_q[1] drives
+    // the receiver state machine. Digital tests do not establish MTBF.
+    (* ASYNC_REG = "TRUE", SHREG_EXTRACT = "NO" *) logic [1:0] sync_q;
     logic [31:0] ticks_q;
     logic [2:0] bit_q;
     logic [7:0] shift_q;
