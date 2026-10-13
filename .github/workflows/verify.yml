@@ -59,3 +59,51 @@ jobs:
       - name: Compile and build
         working-directory: frontend
         run: npm run build
+
+  synthesis-formal:
+    name: Yosys synthesis, comparison, output-gate SAT
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Yosys and sv2v 0.0.13
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yosys curl unzip
+          curl --fail --location --retry 3 --silent --show-error \
+            'https://github.com/zachjs/sv2v/releases/download/v0.0.13/sv2v-Linux.zip' \
+            --output /tmp/sv2v-Linux.zip
+          mkdir -p /tmp/sv2v-dist
+          unzip -q /tmp/sv2v-Linux.zip -d /tmp/sv2v-dist
+          SV2V_BIN="$(find /tmp/sv2v-dist -type f -name sv2v | head -n 1)"
+          test -n "$SV2V_BIN"
+          sudo install -m 0755 "$SV2V_BIN" /usr/local/bin/sv2v
+          yosys -V
+          sv2v --numeric-version
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - name: Install locked dependencies
+        run: uv sync --locked --group dev
+      - name: Verify pinned RTL and campaign evidence
+        run: uv run faultscope-ascon verify-evidence
+      - name: Prove output masking with SAT and negative control
+        run: uv run python -m experiments.phase10b_formal --out-dir build/reproduction/phase10b/formal
+      - name: Verify resource-accounting and proof tests
+        run: uv run python -m pytest tests/test_phase10b_analysis.py tests/test_phase10b_formal.py -q
+      - name: Run three-architecture Yosys synthesis (separate artifacts)
+        run: |
+          uv run python -m experiments.run_phase5 \
+            --campaign reports/phase4b_temporal.csv \
+            --out-dir build/reproduction/phase10b
+      - name: Produce historical comparison with metadata excluded
+        run: uv run python -m experiments.phase10b_analysis --out-dir build/reproduction/phase10b
+      - name: Upload synthesis, formal logs, manifest and netlists
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase10b-synthesis-formal-${{ github.run_id }}
+          path: build/reproduction/phase10b/
+          retention-days: 14
+          if-no-files-found: warn
