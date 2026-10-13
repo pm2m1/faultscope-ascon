@@ -144,6 +144,11 @@ module tb_faultscope_phase13_reset;
 
     initial begin
         for (integer b=0;b<16;b++) payload[b]=0;
+        // Establish an explicit asynchronous reset edge before
+        // the first clock; do not rely on time-zero initialization.
+        rst_n = 1'b1;
+        #1;
+        rst_n = 1'b0;
         // Three asynchronous-release phases: 1, 2 and 3 ns from falling edge.
         release_after_offset(1);
         expect_status(8'h22,0,0);
