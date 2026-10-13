@@ -1,0 +1,80 @@
+name: Phase 10D Xilinx Series-7 FPGA synthesis
+
+# Pilot workflow: run manually until Mac and Ubuntu synthesis both pass.
+# Deliberately not required for unrelated PRs until cross-version validation.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fpga-xc7:
+    name: Artix-7-family out-of-context primitive evaluation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Checkout pinned RTL
+        uses: actions/checkout@v4
+
+      - name: Install Yosys and sv2v 0.0.13
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yosys curl unzip
+          curl --fail --location --retry 3 --silent --show-error \
+            'https://github.com/zachjs/sv2v/releases/download/v0.0.13/sv2v-Linux.zip' \
+            --output /tmp/sv2v-Linux.zip
+          mkdir -p /tmp/sv2v-dist
+          unzip -q /tmp/sv2v-Linux.zip -d /tmp/sv2v-dist
+          SV2V_BIN="$(find /tmp/sv2v-dist -type f -name sv2v | head -n 1)"
+          test -n "$SV2V_BIN"
+          sudo install -m 0755 "$SV2V_BIN" /usr/local/bin/sv2v
+          yosys -V
+          test "$(sv2v --numeric-version)" = "0.0.13"
+
+      - name: Set up Python 3.12 and uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --locked --group dev
+
+      - name: Verify unchanged campaign evidence and RTL
+        run: uv run faultscope-ascon verify-evidence
+
+      - name: Run Phase 10D mapping and accounting tests
+        run: uv run python -m pytest tests/test_phase10d_fpga.py -q
+
+      - name: Synthesize all three actual RTL architectures for xc7
+        run: |
+          uv run python -m experiments.phase10d_fpga \
+            --out-dir build/reproduction/phase10d
+
+      - name: Validate mapped results and source provenance
+        run: |
+          uv run python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path('build/reproduction/phase10d/fpga_resources.json')
+          data = json.loads(path.read_text())
+          assert data['target_family'] == 'xc7'
+          assert data['historical_rtl_verified'] is True
+          assert set(data['architectures']) == {'baseline', 'instrumented', 'protected'}
+          for design, row in data['architectures'].items():
+              assert row['lut_total'] > 0, design
+              assert row['flip_flops'] > 0, design
+              assert not any(k.startswith('$_') for k in row['cell_types']), design
+          print('PASS: real xc7 LUT/FF mapping for three architectures; no unmapped Yosys gates')
+          print(path.read_text()[:1600])
+          PY
+
+      - name: Upload netlists, logs, manifest and resource report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase10d-fpga-xc7-${{ github.run_id }}
+          path: build/reproduction/phase10d/
+          retention-days: 14
+          if-no-files-found: warn
