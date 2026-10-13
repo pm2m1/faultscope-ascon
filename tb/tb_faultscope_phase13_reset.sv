@@ -144,11 +144,18 @@ module tb_faultscope_phase13_reset;
 
     initial begin
         for (integer b=0;b<16;b++) payload[b]=0;
-        // Establish an explicit asynchronous reset edge before
-        // the first clock; do not rely on time-zero initialization.
+        // Establish the released reset state in simulation before
+        // testing a real asynchronous assertion.
         rst_n = 1'b1;
-        #1;
+        uart_rx = 1'b1;
+        repeat (6) @(negedge clk);
+        if (dut.rst_n_core !== 1'b1)
+            $fatal(1, "Reset synchronizer did not release");
+
+        // Assert reset away from a clock edge.
+        #2;
         rst_n = 1'b0;
+        assert_held_reset();
         // Three asynchronous-release phases: 1, 2 and 3 ns from falling edge.
         release_after_offset(1);
         expect_status(8'h22,0,0);
