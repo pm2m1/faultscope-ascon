@@ -114,7 +114,7 @@ def test_historical_digest_guard_requires_exact_source_set():
 def test_real_report_provenance_from_committed_rtl():
     historical = json.loads((ROOT / "reports/phase5/manifest.json").read_text())
     assert set(DESIGNS) == {"baseline", "instrumented", "protected"}
-    verify_historical_rtl_hashes(source_hashes(), historical)
+    verify_historical_rtl_hashes(source_hashes(), historical, source_dir=ROOT / "rtl")
 
 
 def test_live_fpga_synthesis_opt_in(tmp_path):

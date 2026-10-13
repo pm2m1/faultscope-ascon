@@ -25,6 +25,7 @@ def verify_evidence(root: Path) -> bool:
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
     from backend.research import CAMPAIGNS
+    from experiments.source_provenance import verify_rtl_source
 
     manifest = json.loads((root / "reports" / "phase5" / "manifest.json").read_text(encoding="utf-8"))
     expected: dict[str, str] = {
@@ -45,14 +46,13 @@ def verify_evidence(root: Path) -> bool:
     for name, expected_digest in manifest.get("sources_sha256", {}).items():
         relative = f"rtl/{name}"
         try:
-            actual = hashlib.sha256((root / relative).read_bytes()).hexdigest()
-        except OSError as exc:
+            entry = verify_rtl_source(root / relative, expected_digest)
+        except (OSError, ValueError) as exc:
             print(f"FAIL {relative}: {exc}")
             success = False
             continue
-        matches = actual == expected_digest
-        print(f"{'PASS' if matches else 'FAIL'} {relative} sha256={actual}")
-        success &= matches
+        print(f"PASS {relative} raw_sha256={entry['raw_sha256']} "
+              f"pinned_sha256={expected_digest} match_mode={entry['match_mode']}")
 
     # Historical source/ref pins are provenance; they need not match current HEAD.
     try:

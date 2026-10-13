@@ -7,9 +7,10 @@ as functional RTL regressions or proof of equivalent physical implementations.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
+
+from experiments.source_provenance import verify_rtl_source
 
 ROOT = Path(__file__).resolve().parents[1]
 DESIGNS = ("baseline", "instrumented", "protected")
@@ -52,10 +53,12 @@ def percent_increase(new: int, base: int) -> float:
 def build_comparison(current: dict, historical: dict, current_manifest: dict,
                      historical_manifest: dict, root: Path = ROOT) -> dict:
     # If the RTL differs, this is no longer a tool-only reproducibility comparison.
+    provenance = {}
     for name, digest in historical_manifest["sources_sha256"].items():
-        actual = hashlib.sha256((root / "rtl" / name).read_bytes()).hexdigest()
-        if actual != digest or current_manifest["sources_sha256"].get(name) != digest:
+        entry = verify_rtl_source(root / "rtl" / name, digest)
+        if current_manifest["sources_sha256"].get(name) not in (digest, entry["raw_sha256"]):
             raise ValueError(f"RTL source hash differs from historical manifest: {name}")
+        provenance[name] = entry
     if current_manifest["flow"] != historical_manifest["flow"]:
         raise ValueError("Synthesis flow differs from historical flow")
     measured, old = {}, {}
@@ -71,7 +74,10 @@ def build_comparison(current: dict, historical: dict, current_manifest: dict,
             "current": {"yosys": current_manifest["yosys"], "sv2v": current_manifest["sv2v"]},
             "historical": {"yosys": historical_manifest["yosys"], "sv2v": historical_manifest["sv2v"]},
         },
-        "same_synthesis_flow_and_RTL_hashes": True,
+        # Raw manifest equality is distinct from permitted checkout conversion.
+        "same_synthesis_flow_and_RTL_hashes": current_manifest["sources_sha256"] == historical_manifest["sources_sha256"],
+        "RTL_matches_historical_bytes_or_CRLF_conversion": True,
+        "rtl_source_provenance": provenance,
         "current": measured,
         "historical_corrected": old,
         "relative_overhead_percent": {
@@ -95,7 +101,7 @@ def main() -> None:
     historical_manifest = json.loads((ROOT / "reports/phase5/manifest.json").read_text())
     comparison = build_comparison(current, historical, current_manifest, historical_manifest)
     (out_dir / "phase10b_comparison.json").write_text(json.dumps(comparison, indent=2) + "\n")
-    print("RTL hashes and synthesis flow agree with pinned historical evidence.")
+    print("RTL matches historical evidence under the recorded raw/CRLF-to-LF policy; synthesis flow agrees.")
     print("Tool versions: current", comparison["tools"]["current"])
     print("Tool versions: historical", comparison["tools"]["historical"])
     for name in DESIGNS:

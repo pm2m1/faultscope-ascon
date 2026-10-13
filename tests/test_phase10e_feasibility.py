@@ -71,7 +71,7 @@ def test_output_must_be_inside_build(tmp_path):
 def test_report_written_with_no_timing_claim(tmp_path, monkeypatch):
     import experiments.phase10e_feasibility as mod
     mapping=tmp_path/'fpga.json';mapping.write_text(json.dumps(fixture_mapping()))
-    rtl=tmp_path/'top.sv';rtl.write_text(HEADER)
+    rtl=tmp_path/'top.sv';rtl.write_bytes(HEADER.encode('utf-8'))
     import hashlib
     monkeypatch.setattr(mod,'ROOT',tmp_path)
     monkeypatch.setattr(mod,'PINNED_RTL_SHA256',hashlib.sha256(HEADER.encode()).hexdigest())

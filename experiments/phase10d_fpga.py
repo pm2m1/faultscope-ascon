@@ -19,6 +19,8 @@ import subprocess
 
 from experiments.run_phase5 import DESIGNS, ROOT, source_hashes, tool_version
 
+from experiments.source_provenance import verify_rtl_source
+
 ARCHITECTURE = "xc7"
 EXPECTED_SV2V = "0.0.13"
 FLOW_FLAGS = ("-family", "xc7", "-flatten", "-noiopad", "-noclkbuf")
@@ -106,15 +108,25 @@ def build_comparison(rows: dict) -> dict:
     return result
 
 
-def verify_historical_rtl_hashes(actual: dict[str, str], pinned: dict) -> None:
+def verify_historical_rtl_hashes(actual: dict[str, str], pinned: dict,
+                                 *, source_dir: Path | None = None) -> dict:
+    """Dictionary hashes stay strict unless actual source bytes are supplied."""
     recorded = pinned.get("sources_sha256", {})
     if not isinstance(recorded, dict) or not recorded:
         raise ValueError("Missing Phase 5 source provenance")
     if set(actual) != set(recorded):
         raise ValueError("Source set disagrees with historical manifest")
+    provenance = {}
     for path, digest in recorded.items():
-        if actual.get(path) != digest:
-            raise ValueError(f"RTL source differs from Phase 5 provenance: {path}")
+        if source_dir is None:
+            if actual.get(path) != digest:
+                raise ValueError(f"RTL source differs from Phase 5 provenance: {path}")
+        else:
+            entry = verify_rtl_source(source_dir / path, digest)
+            if actual.get(path) != entry["raw_sha256"]:
+                raise ValueError(f"Recorded raw RTL source digest disagrees with source bytes: {path}")
+            provenance[path] = entry
+    return provenance
 
 
 def validate_out_dir(out_dir: Path, root: Path = ROOT) -> Path:
@@ -192,7 +204,7 @@ def main() -> None:
         raise RuntimeError(f"Expected sv2v {EXPECTED_SV2V}, got {versions['sv2v']!r}")
     historical = json.loads((ROOT / "reports/phase5/manifest.json").read_text())
     hashes = source_hashes()
-    verify_historical_rtl_hashes(hashes, historical)
+    source_provenance = verify_historical_rtl_hashes(hashes, historical, source_dir=ROOT / "rtl")
     out.mkdir(parents=True, exist_ok=True)
     (out / "logs").mkdir(exist_ok=True)
     (out / "netlists").mkdir(exist_ok=True)
@@ -226,6 +238,7 @@ def main() -> None:
         "git_commit": head,
         "source_sha256": hashes,
         "historical_rtl_verified": True,
+        "historical_source_provenance": source_provenance,
         "architectures": measurements,
         "comparison": build_comparison(measurements),
     }
