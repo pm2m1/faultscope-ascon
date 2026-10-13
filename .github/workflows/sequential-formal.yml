@@ -1,0 +1,80 @@
+name: Phase 10C bounded controller formal
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-controller:
+    name: AEAD controller bounded SAT (18 clocks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout verified RTL and harness
+        uses: actions/checkout@v4
+
+      - name: Install Yosys and pinned sv2v 0.0.13
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yosys curl unzip
+          curl --fail --location --retry 3 --silent --show-error \
+            'https://github.com/zachjs/sv2v/releases/download/v0.0.13/sv2v-Linux.zip' \
+            --output /tmp/sv2v-Linux.zip
+          mkdir -p /tmp/sv2v-dist
+          unzip -q /tmp/sv2v-Linux.zip -d /tmp/sv2v-dist
+          SV2V_BIN="$(find /tmp/sv2v-dist -type f -name sv2v | head -n 1)"
+          test -n "$SV2V_BIN"
+          sudo install -m 0755 "$SV2V_BIN" /usr/local/bin/sv2v
+          yosys -V
+          test "$(sv2v --numeric-version)" = "0.0.13"
+
+      - name: Set up Python 3.12 and uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+
+      - name: Restore locked Python dependencies
+        run: uv sync --locked --group dev
+
+      - name: Verify pinned controller RTL and evidence
+        run: uv run faultscope-ascon verify-evidence
+
+      - name: Verify sequential harness and SAT-verdict tests
+        run: uv run python -m pytest tests/test_phase10c_sequential.py -q
+
+      - name: Run bounded sequential SAT, reachability and negative controls
+        run: |
+          uv run python -m experiments.phase10c_sequential \
+            --steps 18 \
+            --out-dir build/reproduction/phase10c
+
+      - name: Verify machine-readable proof summary
+        run: |
+          uv run python - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path('build/reproduction/phase10c/phase10c_result.json').read_text())
+          assert result['clock_bound'] == 18
+          assert result['results']['policy_ok'].startswith('PASS')
+          assert result['results']['cover_clean'].startswith('REACHABLE')
+          assert result['results']['cover_alarm'].startswith('REACHABLE')
+          assert result['results']['mutant_leak'].startswith('COUNTEREXAMPLE')
+          assert result['results']['mutant_alarm_bypass'].startswith('COUNTEREXAMPLE')
+          print('PASS: bounded policy, two completion witnesses, two negative controls')
+          PY
+
+      - name: Upload source-extracted proof logs and counterexamples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase10c-sequential-formal-${{ github.run_id }}
+          path: build/reproduction/phase10c/
+          retention-days: 14
+          if-no-files-found: warn
