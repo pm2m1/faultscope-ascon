@@ -1,0 +1,67 @@
+name: Phase 11 UART wrapper pilot
+
+# Opt-in until Mac and GitHub UART RTL simulation/mapping both pass.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  uart-interface:
+    name: UART commands, real temporal AEAD, xc7 core mapping
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Verilator, Yosys and pinned sv2v
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y verilator g++ make cmake yosys curl unzip
+          curl --fail --location --retry 3 --silent --show-error \
+            'https://github.com/zachjs/sv2v/releases/download/v0.0.13/sv2v-Linux.zip' \
+            --output /tmp/sv2v-Linux.zip
+          mkdir -p /tmp/sv2v-dist
+          unzip -q /tmp/sv2v-Linux.zip -d /tmp/sv2v-dist
+          SV2V_BIN="$(find /tmp/sv2v-dist -type f -name sv2v | head -n 1)"
+          test -n "$SV2V_BIN"
+          sudo install -m 0755 "$SV2V_BIN" /usr/local/bin/sv2v
+          test "$(sv2v --numeric-version)" = '0.0.13'
+          verilator --version
+          yosys -V
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - name: Install pinned Python dependencies
+        run: uv sync --locked --group dev
+      - name: Confirm original RTL and experiment evidence
+        run: uv run faultscope-ascon verify-evidence
+      - name: UART protocol and actual RTL simulation (mandatory)
+        env:
+          FAULTSCOPE_RUN_PHASE11_UART: '1'
+        run: uv run python -m pytest tests/test_phase11_uart.py -v
+      - name: XC7 FPGA mapping of complete UART core (mandatory)
+        env:
+          FAULTSCOPE_RUN_PHASE11_FPGA: '1'
+        run: uv run python -m pytest tests/test_phase11_fpga.py -v
+      - name: Verify six-bit port screen and mapped output provenance
+        run: |
+          uv run python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('build/reproduction/phase11/uart_resource_screen.json')
+          r = json.loads(p.read_text())
+          assert r['num_top_level_signal_bits'] == 6
+          assert r['historical_rtl_pinned'] is True
+          assert r['metrics']['lut_total'] > 0 and r['metrics']['flip_flops'] > 0
+          print('PASS: UART host interface mapped to six top-level signal bits')
+          PY
+      - name: Upload interface synthesis artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase11-uart-interface-${{ github.run_id }}
+          path: build/reproduction/phase11/
+          retention-days: 14
+          if-no-files-found: warn
