@@ -1,0 +1,73 @@
+name: Phase 10E XC7A100T resource feasibility
+
+# Manual pilot. This workflow runs only Yosys mapping and capacity checks.
+# It cannot prove timing closure or board pin feasibility without Vivado/board wrapper.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  device-capacity:
+    name: XC7A100T capacity and direct-I/O screen
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Yosys and pinned sv2v
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yosys curl unzip
+          curl --fail --location --retry 3 --silent --show-error \
+            'https://github.com/zachjs/sv2v/releases/download/v0.0.13/sv2v-Linux.zip' \
+            --output /tmp/sv2v-Linux.zip
+          mkdir -p /tmp/sv2v-dist
+          unzip -q /tmp/sv2v-Linux.zip -d /tmp/sv2v-dist
+          SV2V_BIN="$(find /tmp/sv2v-dist -type f -name sv2v | head -n 1)"
+          test -n "$SV2V_BIN"
+          sudo install -m 0755 "$SV2V_BIN" /usr/local/bin/sv2v
+          yosys -V
+          test "$(sv2v --numeric-version)" = "0.0.13"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - name: Restore Python dependencies
+        run: uv sync --locked --group dev
+      - name: Verify RTL/evidence
+        run: uv run faultscope-ascon verify-evidence
+      - name: Unit-test capacity accounting
+        run: uv run python -m pytest tests/test_phase10e_feasibility.py -v
+      - name: Reproduce mapped XC7 primitive inventory
+        run: uv run python -m experiments.phase10d_fpga --out-dir build/reproduction/phase10d
+      - name: Evaluate specific device resource fit and package I/O
+        run: |
+          uv run python -m experiments.phase10e_feasibility \
+            --fpga-json build/reproduction/phase10d/fpga_resources.json \
+            --out-dir build/reproduction/phase10e
+      - name: Validate mandatory report fields
+        run: |
+          uv run python - <<'PY'
+          import json
+          from pathlib import Path
+          p = json.loads(Path('build/reproduction/phase10e/feasibility.json').read_text())
+          assert p['device'] == 'xc7a100tcsg324-1'
+          assert p['source_provenance'] is True
+          assert all(v['screen_pass'] for v in p['designs'].values())
+          assert p['io']['total_bits'] == 803
+          assert p['io']['direct_parallel_pin_interface_feasible'] is False
+          print('PASS: mapped core fits resource capacity screen, but parallel port exceeds package I/O limit')
+          PY
+      - name: Upload Phase 10E resource and provenance reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase10e-feasibility-${{ github.run_id }}
+          path: |
+            build/reproduction/phase10e/
+            build/reproduction/phase10d/fpga_resources.json
+            build/reproduction/phase10d/manifest.json
+            build/reproduction/phase10d/REPORT.md
+          retention-days: 14
+          if-no-files-found: warn
