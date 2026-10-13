@@ -64,10 +64,16 @@ def run_proof(out_dir: Path, *, negative_control: bool = False,
     harness = out_dir / f"output_gate_{label}.v"
     harness.write_text(make_harness(source_path.read_text(), negative_control=negative_control))
     log = out_dir / f"output_gate_{label}.log"
+    # For a deliberately broken circuit, ask Yosys to *show* a counterexample
+    # without -verify. Older Yosys versions abort with an ERROR under -verify
+    # before emitting a machine-checkable "model found: FAIL!" verdict.
+    sat_options = "-prove policy_ok 1 -show-inputs -show-outputs"
+    if not negative_control:
+        sat_options = "-verify " + sat_options
     script = (
         f"read_verilog {harness.resolve()}; "
         "prep -top phase10b_output_gate_formal; "
-        "sat -verify -prove policy_ok 1 -show-inputs -show-outputs"
+        f"sat {sat_options}"
     )
     proc = subprocess.run([executable, "-Q", "-T", "-p", script], capture_output=True, text=True, timeout=90)
     output = proc.stdout + "\n" + proc.stderr
@@ -79,7 +85,7 @@ def run_proof(out_dir: Path, *, negative_control: bool = False,
     verdict_success = "SAT proof finished - no model found: SUCCESS!" in output
     verdict_counterexample = "SAT proof finished - model found: FAIL!" in output
     if negative_control:
-        if proc.returncode == 0 or not verdict_counterexample:
+        if proc.returncode != 0 or not verdict_counterexample:
             raise AssertionError(f"Negative control did not produce a SAT counterexample: {log}")
         return True, log
     if proc.returncode != 0 or not verdict_success:

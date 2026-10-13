@@ -3,6 +3,7 @@
 The Yosys-dependent test is also run as a mandatory step in the synthesis CI
 job; local environments without Yosys run the extraction tests and skip SAT.
 """
+import subprocess
 import shutil
 
 import pytest
@@ -36,3 +37,29 @@ def test_sat_proof_and_negative_control(tmp_path):
         pytest.skip('Yosys not installed; required in dedicated CI synthesis job')
     assert run_proof(tmp_path)[0]
     assert run_proof(tmp_path, negative_control=True)[0]
+
+
+def test_negative_control_portable_verdict(tmp_path, monkeypatch):
+    """A genuine counterexample passes; a Yosys error never counts as one."""
+    from experiments import phase10b_formal
+
+    captured = []
+
+    def counterexample(cmd, **kwargs):
+        captured.append(cmd[-1])
+        return subprocess.CompletedProcess(
+            cmd, 0, stdout="SAT proof finished - model found: FAIL!\n", stderr=""
+        )
+
+    monkeypatch.setattr(phase10b_formal.subprocess, 'run', counterexample)
+    assert run_proof(tmp_path, negative_control=True, yosys='yosys')[0]
+    assert '-verify' not in captured[-1]
+
+    def tool_error(cmd, **kwargs):
+        return subprocess.CompletedProcess(
+            cmd, 1, stdout="ERROR: Called with -verify and proof did fail!\n", stderr=""
+        )
+
+    monkeypatch.setattr(phase10b_formal.subprocess, 'run', tool_error)
+    with pytest.raises(AssertionError, match='Negative control did not produce'):
+        run_proof(tmp_path, negative_control=True, yosys='yosys')
