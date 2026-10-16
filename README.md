@@ -8,7 +8,7 @@ FaultScope-Ascon connects a verified cryptographic reference, synthesizable Syst
 
 The project is a **research and teaching prototype**, not a production cryptographic library or a demonstrated physical fault attack.
 
-**Repository:** [pm2m1/faultscope-ascon](https://github.com/pm2m1/faultscope-ascon) · **Language/stack:** SystemVerilog, Python, Verilator, Yosys, React, TypeScript, FastAPI · **Verified development baseline:** 48 passing pytest cases and successful Vite production build (October 2026, macOS).
+**Repository:** [pm2m1/faultscope-ascon](https://github.com/pm2m1/faultscope-ascon) | **Stack:** SystemVerilog, Python, Verilator, Yosys, Vivado, React, TypeScript, FastAPI | **Verified GitHub CI baseline:** 514 passed, 6 skipped (commit `8b46a3f`, October 2026).
 
 ## At a glance
 
@@ -25,7 +25,7 @@ The project is a **research and teaching prototype**, not a production cryptogra
 
 ## Start here: run the project
 
-The repository is currently **private**. You need access to clone it.
+The repository is public and can be cloned without repository-specific access.
 
 ### Requirements
 
@@ -71,7 +71,7 @@ uv run python -m pytest tests/ -q
 cd frontend && npm run build && cd ..
 ```
 
-**Expected at the documented development revision:** `48 passed` with one non-fatal Starlette/httpx deprecation warning, and a successful TypeScript/Vite build. This is an observed local baseline, **not** a GitHub Actions CI badge or a guarantee on untested operating systems.
+**Verified at commit `8b46a3f`:** GitHub Actions reported 514 passed and 6 skipped in the Python/RTL suite, with successful frontend build, Yosys synthesis and formal verification jobs. Results depend on the documented environment and tool versions.
 
 ### 3. Launch the dashboard
 
@@ -211,16 +211,16 @@ Available local API routes include `GET /api/health`, `/api/summary`, `/api/case
 - **Limited clean-replay result.** Phase 4B's 93/93 result presumes a trustworthy replay, checkpoint and comparator; its no-alarm cases do not prove a zero false-alarm probability.
 - **Adversarial fault hooks are test instrumentation.** Dual-execution correlation, shared-checkpoint corruption, and comparator suppression intentionally violate the original trust assumptions. They are not a secure production implementation.
 - **Encrypt/tag RTL only.** No RTL authenticated decryption, recipient forgery acceptance, key extraction, or bypass of a real verifier has been established.
-- **Technology-independent synthesis.** No mapped FPGA, physical placement/routing, timing closure, power, energy, or post-silicon validation is included.
+- **Implementation evidence has distinct scopes.** Phase 5 reports technology-independent Yosys cell counts. Later phases document FPGA mapping and Vivado routed implementation under stated timing assumptions. Physical board execution, complete external I/O timing qualification, power measurement and physical fault resistance remain unverified.
 - **No production-security claim.** Results are informative within their specified models; the system has not undergone a third-party security audit.
 
 ## Project status and next steps
 
-**Verified locally:** the official cryptographic vectors, RTL/testbench comparisons, deterministic campaigns, hash-checked dashboard API, Python↔TypeScript permutation traces, 48-test suite, and frontend production build. A fresh separate checkout was also checked manually on the same Mac.
+**Verified implementation:** Official cryptographic vectors, Python/RTL comparisons, fault campaigns, evidence-integrity checks, dashboard, TypeScript trace cross-checks, and local frontend build. GitHub Actions independently verified the committed implementation at `8b46a3f`.
 
-**Planned improvements:** automated GitHub Actions checks; a meaningful Python CLI or removal of its placeholder entry point; machine-checkable fail-closed RTL properties; FPGA-specific resource/timing synthesis; release-ready project screenshots and a demo video; and additional explicitly scoped fault families. These are **not implemented or validated** in the current repository.
+**Remaining qualifications:** Complete the post-merge Phase 24 evidence audit; document the six skipped CI tests; qualify external I/O timing, reset and CDC assumptions; and validate operation on a physical board if hardware deployment is pursued. Additional fault models and demonstration media are optional future work.
 
-The package metadata currently includes a placeholder description and its installed `faultscope-ascon` command prints `Hello from faultscope-ascon!`; use the documented `uvicorn` and `npm` commands to run the application until that entry point is improved.
+The installed CLI supports `uv run faultscope-ascon verify-evidence` and `uv run faultscope-ascon serve`. The React interface is started separately with `cd frontend` followed by `npm run dev`.
 
 ## References, provenance and reuse
 
@@ -237,4 +237,4 @@ The package metadata currently includes a placeholder description and its instal
 
 **Attribution and AI assistance:** The upstream Ascon standard and Ascon-C implementation are third-party work. AI tools assisted parts of the project planning, code/documentation drafting, and review; experimental outputs and security claims should be attributed to their test procedures and independently verified before external publication.
 
-**Licensing:** No project-level `LICENSE` file is currently committed. Do not assume that this project's source has an open-source license; the upstream reference has its own terms. Choose and review a license **before making the repository public**.
+**Licensing:** The repository is public, but no project-level `LICENSE` file is committed. Public visibility does not automatically grant open-source reuse rights. Review and add an appropriate license if broader reuse is intended; upstream components have separate terms.
