@@ -1,0 +1,52 @@
+﻿name: Website browser verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    name: Dark website, browser crypto and evidence UI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      FAULTSCOPE_TEST_PYTHON: ${{ github.workspace }}/.venv/bin/python
+      FAULTSCOPE_UI_OUTPUT: ${{ github.workspace }}/build/reproduction/website_ui/ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - name: Install locked Python dependencies
+        run: uv sync --locked --group dev
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Install Chromium and required system libraries
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Verify committed evidence
+        run: uv run faultscope-ascon verify-evidence
+      - name: Run browser interactions and responsive checks
+        working-directory: frontend
+        run: npm run test:ui
+      - name: Upload browser logs and review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-browser-${{ github.run_id }}
+          path: build/reproduction/website_ui/
+          retention-days: 14
+          if-no-files-found: warn
