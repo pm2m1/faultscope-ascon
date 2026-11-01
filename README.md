@@ -2,7 +2,7 @@
 
 **A pre-silicon hardware-security workbench for NIST Ascon-AEAD128.**
 
-FaultScope-Ascon connects a verified cryptographic reference, synthesizable SystemVerilog, deterministic fault-injection experiments, temporal recomputation, hardware-cost analysis, and an interactive research dashboard. Its main question is:
+FaultScope-Ascon connects a verified cryptographic reference, synthesizable SystemVerilog, deterministic fault-injection experiments, temporal recomputation, hardware-cost analysis, and a two-page interactive research and algorithm website. Its main question is:
 
 > **When does re-executing a cryptographic operation detect faults, and what happens when the replay, checkpoint, or comparator cannot be trusted?**
 
@@ -19,7 +19,8 @@ The project is a **research and teaching prototype**, not a production cryptogra
 | Defense | Temporal recomputation, mismatch alarm, and fail-closed output gating for the tested fault model |
 | Experiments | First-pass transient faults; adversarial first/replay, shared-checkpoint, and simulated comparator-suppression hooks |
 | Evaluation | Verilator testbenches, Python reference checks, simulation-cycle measurements, generic Yosys cell counts |
-| Interactive UI | Hash-verified research dashboard, filterable campaign evidence, animated 320-bit Ascon permutation and fault/replay lab |
+| Research Dashboard | Original dark navy/cyan interface, project architecture, hash-verified evidence, filters, charts, Simple/Technical views and permutation Learning Lab |
+| Algorithm Walkthrough | Browser-local Ascon-AEAD128 encryption/authenticated decryption, eight-step state trace, round/layer and byte-XOR exploration, playback and tamper rejection |
 
 **Measured findings** — 93/93 applied single first-pass faults were detected with a clean replay; adversarial test fixtures also exposed incorrect releases under correlated faults or compromised comparison assumptions. See [Results](#results-and-how-to-interpret-them) for exact denominators and limitations.
 
@@ -29,7 +30,7 @@ The repository is public and can be cloned without repository-specific access.
 
 ### Requirements
 
-- macOS / Apple Silicon is the **tested environment**; other platforms have not been independently qualified.
+- The reference/RTL baseline is tested on macOS and Ubuntu CI. The website, reference/API subset and Edge browser tests are also validated on Windows; this does not qualify native Windows RTL/formal toolchains.
 - Python **3.12**, [`uv`](https://docs.astral.sh/uv/), Git, and C/C++ development tools (Apple Command Line Tools on macOS).
 - **Verilator**, **Yosys**, **sv2v**, and **CMake** for hardware experiments and tests.
 - Node.js **22+** and npm for the frontend and TypeScript cross-checks.
@@ -73,7 +74,7 @@ cd frontend && npm run build && cd ..
 
 **Verified at commit `8b46a3f`:** GitHub Actions reported 514 passed and 6 skipped in the Python/RTL suite, with successful frontend build, Yosys synthesis and formal verification jobs. Results depend on the documented environment and tool versions.
 
-### 3. Launch the dashboard
+### 3. Launch the two-page website
 
 In terminal 1 (repository root):
 
@@ -92,6 +93,53 @@ Visit **http://127.0.0.1:5173**. Vite proxies `/api` to the local FastAPI proces
 
 > **Quick demo:** Open the overview, compare Phase 4B and the adversarial phases, filter an incorrect-release case in **Adversarial research**, then open the **Ascon learning lab** to step through p[12] and contrast a first-only fault against identical faults in both executions.
 
+### Pages and the HELLO demonstration
+
+- Research Dashboard (default): **http://127.0.0.1:5173/#/**
+- Algorithm Walkthrough: **http://127.0.0.1:5173/#/walkthrough**
+- Recorded research results: **http://127.0.0.1:5173/#/results**
+
+The dashboard retains its dark navy/cyan presentation, sidebar, evidence charts, filters, pagination and original Learning Lab. It adds a project explanation, architecture, actual permutation-level protection demonstration and optional Technical View. Browser back/forward preserves dashboard filter state.
+
+In Algorithm Walkthrough, enter **HELLO**, associated data **Course: CNS**, synthetic key `000102030405060708090a0b0c0d0e0f` and nonce `101112131415161718191a1b1c1d1e1f` in the advanced input section. Click **Encrypt My Message**. The computed ciphertext is `a0b29b6679`, with tag `38a5911ee12bb09077fdc926a45cae30`. Explore the eight steps, p[8]/p[12] rounds and byte XOR, then **Verify & decrypt**. HELLO is released after authentication succeeds; **Tamper With Message** and **Tamper With Tag** cause rejection.
+
+The fixed values are **demo-only**: a nonce must be unique for each encryption under the same real key. The form accepts at most 16 UTF-8 bytes each of plaintext and AD. Editing inputs stops playback and clears the old trace. Keys/plaintext remain browser-local and are not stored or sent to the evidence API. This educational implementation is not a production cryptographic library.
+
+### Windows startup
+
+From an existing repository checkout, with Python 3.12, uv and Node 22.19+ installed:
+
+```powershell
+# Repository root; one-time dependency setup
+uv sync --locked --group dev
+npm.cmd --prefix frontend ci
+
+# Terminal 1, from the repository root
+uv run uvicorn backend.api:app --host 127.0.0.1 --port 8000
+```
+
+```powershell
+# Terminal 2, from the repository root
+npm.cmd --prefix frontend run dev
+```
+
+### Website validation
+
+Restore the pinned Ascon-C checkout above before running reference/vector tests. On Windows, its exact checkout can be selected with `git -C references/ascon-c checkout --detach (Get-Content docs/ascon_reference_commit.txt).Trim()` after cloning that external repository.
+
+```powershell
+# Repository root
+uv run faultscope-ascon verify-evidence
+uv run python -m pytest tests/test_algorithm_walkthrough.py tests/test_aead.py tests/test_phase8b_lab.py tests/test_dashboard_api.py tests/test_phase8a_research_api.py tests/test_phase5_analysis.py -q
+npm.cmd --prefix frontend run build
+$env:FAULTSCOPE_TEST_PYTHON = (uv run python -c "import sys; print(sys.executable)").Trim()
+npm.cmd --prefix frontend run test:ui
+```
+
+Windows browser tests use installed Microsoft Edge. On Linux, install Playwright Chromium with `cd frontend` then `npx playwright install --with-deps chromium` before running `npm run test:ui`. Each run writes logs/screenshots to a new ignored `build/reproduction/website_ui/` directory; `FAULTSCOPE_UI_OUTPUT` can select an explicit output directory. The separate website workflow runs the browser interactions on GitHub without weakening the existing reference/RTL and formal workflows.
+
+The reference tests compare all 1,089 pinned official vectors and every round layer for 0/1/15/16-byte boundaries. Browser tests cover navigation, API-backed findings, filters/pagination, the Learning Lab, HELLO, decryption/tamper rejection, playback, all teaching fault scenarios, dark styling, keyboard operation and responsive layouts. See [walkthrough details](docs/algorithm_walkthrough.md) and [project showcase](docs/project_showcase.md).
+
 ## Architecture
 
 ```mermaid
@@ -109,6 +157,9 @@ flowchart TD
     API --> UI[React research dashboard]
     T[Independent TypeScript BigInt trace engine] --> LAB[Interactive Ascon learning lab]
     LAB --> UI
+    T --> AEAD[Browser-local AEAD trace and authenticated decryption]
+    AEAD --> WALK[Algorithm Walkthrough]
+    UI <--> WALK
 ```
 
 The browser's educational trace engine performs deterministic state calculations, but **does not alter or regenerate the committed experimental evidence**. The research API reads fixed, hash-checked local CSV files; it does not expose shell execution, experiment triggering, or arbitrary file uploads.
@@ -199,9 +250,9 @@ Compare old/new hashes and analyze any mismatch; **do not silently repin committ
 | [`tests/`](tests) | Official KATs, RTL/software comparisons, API-integrity tests, and TS/Python consistency |
 | [`reports/`](reports) | Frozen experimental data, manifests, and summarized synthesis measurements |
 | [`backend/`](backend) | Read-only evidence-serving FastAPI endpoints |
-| [`frontend/`](frontend) | React/Vite dashboard and educational permutation animation |
+| [`frontend/`](frontend) | Dark two-page React/Vite website: research dashboard, original Learning Lab and real AEAD walkthrough |
 | [`docs/`](docs) | Phase-by-phase technical and research methodology notes |
-| [`src/faultscope_ascon/`](src/faultscope_ascon) | Python packaging scaffold; **not** the active dashboard launcher |
+| [`src/faultscope_ascon/`](src/faultscope_ascon) | Evidence-verification and local API CLI; frontend is launched separately |
 
 Available local API routes include `GET /api/health`, `/api/summary`, `/api/cases`, `/api/research/summary`, and `/api/research/cases`.
 
@@ -218,7 +269,7 @@ Available local API routes include `GET /api/health`, `/api/summary`, `/api/case
 
 **Verified implementation:** Official cryptographic vectors, Python/RTL comparisons, fault campaigns, evidence-integrity checks, dashboard, TypeScript trace cross-checks, and local frontend build. GitHub Actions independently verified the committed implementation at `8b46a3f`.
 
-**Remaining qualifications:** Complete the post-merge Phase 24 evidence audit; document the six skipped CI tests; qualify external I/O timing, reset and CDC assumptions; and validate operation on a physical board if hardware deployment is pursued. Additional fault models and demonstration media are optional future work.
+**Remaining qualifications:** Retain the qualified Phase 24 evidence boundary. Its saved post-merge audit and subsequent read-only review checked the nine archives, five reproduced Phase 23 reports and accepted checkpoint; this is not physical signoff. The historical quiet CI log records six skips without their individual node IDs. Qualify external I/O timing, reset and CDC assumptions, and validate operation on a physical board only if hardware deployment is pursued. Additional fault models and demonstration media are optional future work.
 
 The installed CLI supports `uv run faultscope-ascon verify-evidence` and `uv run faultscope-ascon serve`. The React interface is started separately with `cd frontend` followed by `npm run dev`.
 
